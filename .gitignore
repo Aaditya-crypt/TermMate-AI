@@ -1,0 +1,19 @@
+# Local history and generated workspace
+termmate_history.json
+TermMate_Workspace/
+
+# Local API experiments
+check_api.py
+.env
+.env.*
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor and operating-system files
+.vscode/
+.DS_Store
+Thumbs.db
