@@ -21,7 +21,7 @@ TermMate AI simplifies day-to-day terminal navigation, file inspection, and Pyth
   * Create starter Python files with standard `main()` boilerplate.
   * Scaffold structured Python projects (`main.py`, `README.md`, `requirements.txt`).
 * 📖 **Command Dictionary**: Explain common terminal commands (`mkdir`, `cd`, `pip`, `git`, etc.) in simple terms.
-* 🛡️ **Safe Command Execution**: Safely execute whitelisted system commands (`git version`, `python version`, `ipconfig`, etc.) with user confirmation.
+* 🛡️ **Safe Command Execution**: Safely execute whitelisted system commands (`git version`, `python version`, `ipconfig/ifconfig`, etc.) with user confirmation.
 * 📜 **Persistent Session History**: Automatically maintains a rolling history of your last 100 requests in `termmate_history.json`.
 
 ---
@@ -67,37 +67,162 @@ cd TermMate-AI
 
 ---
 
-## 💬 Usage & Command Reference
+## 💻 Commands, Live Outputs & Internal Explanations
 
-Once launched, interact with TermMate using natural requests:
+Here is the complete reference of supported natural-language commands along with real execution outputs and how each feature works internally under the hood.
 
-### 📁 Navigation & Inspection
-| Request Prompt | Description |
-| :--- | :--- |
-| `Show me all files in this folder` | Lists all files and subdirectories |
-| `Show folder sizes` | Shows file and folder sizes in readable units |
-| `Where am I?` | Prints the absolute working directory path |
-| `Find Python files` | Searches and lists all `.py` files |
-| `Find file named <filename>` | Locates a specific file by name |
+### 1. Current Working Directory
+* **Prompt**: `Where am I?` / `where ami?` / `pwd`
+* **Output**:
+  ```text
+  Current directory: /Users/shivam/Desktop/ITM /Linux git/1/TermMate-AI
+  ```
+* **Internal Explanation**:
+  * Uses Python's standard `pathlib.Path.cwd()` method to fetch the absolute path of the current working directory.
+  * Replaces the need to remember OS-specific commands (`pwd` on Linux/macOS or `cd` on Windows).
 
-### 🛠️ Scaffolding & Code Generation
-| Request Prompt | Description |
-| :--- | :--- |
-| `Create a Python calculator` | Creates a full terminal calculator in `TermMate_Workspace/` |
-| `Make a Python file named <name>` | Creates a boilerplate `<name>.py` with a `main()` function |
-| `Create a Python project named <name>` | Scaffolds a full starter project directory with standard files |
-| `Create file named <name>` | Creates an empty text file |
+---
 
-### 🔍 System Diagnostics & Helpers
-| Request Prompt | Description |
-| :--- | :--- |
-| `Check system health` | Displays OS, Python version, and disk capacity breakdown |
-| `Explain <command>` | Explains commands like `mkdir`, `cd`, `git`, `pip`, etc. |
-| `Run git version` | Checks the installed Git version with confirmation |
-| `Show history` | Lists recent queries from `termmate_history.json` |
-| `Clear screen` | Clears the terminal screen |
-| `help` | Prints the interactive help menu |
-| `exit` / `quit` | Exits the TermMate session |
+### 2. File & Directory Inspection
+* **Prompt**: `Show me all files in this folder`
+* **Output**:
+  ```text
+  Contents of: /Users/shivam/Desktop/ITM /Linux git/1/TermMate-AI
+  [DIR]  .git
+  [DIR]  TermMate_Workspace
+  [FILE] .gitignore
+  [FILE] README.md
+  [FILE] termmate.py
+  [FILE] termmate_history.json
+  ```
+* **Internal Explanation**:
+  * Scans current directory using `Path.cwd().iterdir()`.
+  * Sorts items alphabetically while placing directories (`[DIR]`) first, followed by files (`[FILE]`).
+
+---
+
+### 3. File Sizes in Human-Readable Units
+* **Prompt**: `Show folder sizes`
+* **Output**:
+  ```text
+  Contents of: /Users/shivam/Desktop/ITM /Linux git/1/TermMate-AI
+  [DIR]  .git
+  [DIR]  TermMate_Workspace
+  [FILE] .gitignore - 259 bytes
+  [FILE] README.md - 5.3 KB
+  [FILE] termmate.py - 16.1 KB
+  [FILE] termmate_history.json - 1.1 KB
+  ```
+* **Internal Explanation**:
+  * Extracts raw file sizes using `item.stat().st_size`.
+  * Automatically converts raw byte counts into human-readable units (`bytes`, `KB`, `MB`, `GB`) for quick inspection.
+
+---
+
+### 4. Recursive File Search
+* **Prompt**: `Find Python files` or `Find file named hello.py`
+* **Output**:
+  ```text
+  Searching for: *.py
+  /Users/shivam/Desktop/ITM /Linux git/1/TermMate-AI/termmate.py
+  /Users/shivam/Desktop/ITM /Linux git/1/TermMate-AI/TermMate_Workspace/hello.py
+  ```
+* **Internal Explanation**:
+  * Recursively traverses subdirectories using `Path.rglob()`.
+  * Skips internal/dependency directories like `.git`, `node_modules`, `venv`, and `__pycache__` to keep results clean and fast.
+
+---
+
+### 5. System Health & Storage Metrics
+* **Prompt**: `Check system health`
+* **Output**:
+  ```text
+  --- System Information ---
+  Operating system: macOS-26.5.1-arm64-arm-64bit-Mach-O
+  Python version: 3.15.0rc2
+  Current directory: /Users/shivam/Desktop/ITM /Linux git/1/TermMate-AI
+  Disk total: 460 GB
+  Disk used:  141 GB
+  Disk free:  319 GB
+  --------------------------
+  ```
+* **Internal Explanation**:
+  * **OS & Hardware**: Detected via `platform.platform()`.
+  * **Python Environment**: Retrieved using `platform.python_version()`.
+  * **Storage Health**: Evaluated via `shutil.disk_usage()`, converted from bytes to gigabytes ($GB = \text{bytes} / 1024^3$).
+
+---
+
+### 6. Automated Code Generation & Scaffolding
+* **Prompt**: `Create a Python calculator`
+* **Output**:
+  ```text
+  =======================================================
+  PREVIEW: Create new file
+  -------------------------------------------------------
+  Destination: .../TermMate_Workspace/calculator.py
+  Description: Create a Python calculator
+  ...
+  Proceed? Type Y to approve: y
+  Created successfully: .../TermMate_Workspace/calculator.py
+  ```
+* **Internal Explanation**:
+  * Generates a fully working CLI calculator script with basic arithmetic and zero-division handling.
+  * **Safe Isolation**: Saves strictly to `TermMate_Workspace/`.
+  * **Overwrite Protection**: Uses Python's exclusive file mode (`'x'`). If a file with the same name already exists, creation is safely cancelled.
+
+---
+
+### 7. Project Structure Scaffolding
+* **Prompt**: `Create a Python project named StudentManager`
+* **Output**:
+  ```text
+  =======================================================
+  PREVIEW: Create Python project
+  -------------------------------------------------------
+  Project: .../TermMate_Workspace/StudentManager
+  Files to create:
+    - main.py
+    - README.md
+    - requirements.txt
+  -------------------------------------------------------
+  Proceed? Type Y to approve: y
+  Project created: .../TermMate_Workspace/StudentManager
+  ```
+* **Internal Explanation**:
+  * Scaffolds a complete starter repository directory containing standard entry-point (`main.py`), project documentation (`README.md`), and dependency manifest (`requirements.txt`).
+
+---
+
+### 8. Terminal Command Dictionary
+* **Prompt**: `Explain mkdir`
+* **Output**:
+  ```text
+  Creates a new directory.
+  ```
+* **Internal Explanation**:
+  * Built-in dictionary mapping standard shell commands (`mkdir`, `cd`, `ls`, `git`, `pip`, `pwd`, etc.) to concise, beginner-friendly explanations.
+
+---
+
+### 9. Cross-Platform Whitelisted Diagnostics
+* **Prompt**: `Run git version` / `Run ipconfig`
+* **Output** (macOS example):
+  ```text
+  =======================================================
+  PREVIEW: Run supported command
+  -------------------------------------------------------
+  Command: ipconfig (ifconfig)
+  -------------------------------------------------------
+  Proceed? Type Y to approve: y
+  en0: flags=8863<UP,BROADCAST,SMART,RUNNING> mtu 1500
+          inet 10.154.32.63 netmask 0xffffff00 broadcast 10.154.32.255
+          ...
+  Exit code: 0
+  ```
+* **Internal Explanation**:
+  * Runs pre-approved diagnostic commands safely using `subprocess.run()`.
+  * **Cross-Platform Compatibility**: Automatically adapts commands between Windows (`ipconfig`, `cmd dir`) and macOS/Linux (`ifconfig`, `ls -la`).
 
 ---
 
@@ -106,8 +231,8 @@ Once launched, interact with TermMate using natural requests:
 ```text
 TermMate-AI/
 ├── termmate.py               # Core application logic and command handlers
-├── README.md                 # Project documentation
-├── termmate_history.json     # Rolling log of user requests
+├── README.md                 # Project documentation & reference
+├── termmate_history.json     # Rolling log of user requests (last 100 entries)
 └── TermMate_Workspace/       # Safe output directory for generated files & projects
 ```
 
