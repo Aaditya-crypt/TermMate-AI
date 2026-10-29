@@ -65,6 +65,16 @@ def show_history():
         print("Could not read request history.")
 
 
+def format_size(size_bytes):
+    for unit in ["bytes", "KB", "MB", "GB"]:
+        if size_bytes < 1024.0 or unit == "GB":
+            if unit == "bytes":
+                return f"{size_bytes} {unit}"
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} GB"
+
+
 # 3. List files and folders
 def list_files(show_sizes=False):
     folder = Path.cwd()
@@ -85,7 +95,8 @@ def list_files(show_sizes=False):
                 print(f"[DIR]  {item.name}")
             elif show_sizes:
                 try:
-                    print(f"[FILE] {item.name} - {item.stat().st_size:,} bytes")
+                    size = format_size(item.stat().st_size)
+                    print(f"[FILE] {item.name} - {size}")
                 except OSError:
                     print(f"[FILE] {item.name} - size unavailable")
             else:
@@ -328,24 +339,34 @@ def explain_command(request):
 
 # 10. Run only explicitly supported commands
 def run_safe_command(request):
-    commands = {
-        "dir": ["cmd", "/c", "dir"],
-        "ls": ["cmd", "/c", "dir"],
-        "pwd": ["powershell", "-NoProfile", "-Command", "Get-Location"],
-        "python version": [sys.executable, "--version"],
-        "git version": ["git", "--version"],
-        "ipconfig": ["ipconfig"]
-    }
-
     key = request.strip().lower()
-    command = commands.get(key)
+
+    # Cross-platform safe command mappings
+    is_windows = os.name == "nt"
+    
+    if key in {"dir", "ls"}:
+        command = ["cmd", "/c", "dir"] if is_windows else ["ls", "-la"]
+    elif key == "pwd":
+        command = ["powershell", "-NoProfile", "-Command", "Get-Location"] if is_windows else ["pwd"]
+    elif key in {"python version", "check python version"}:
+        command = [sys.executable, "--version"]
+    elif key in {"git version", "check git version"}:
+        command = ["git", "--version"]
+    elif key in {"ipconfig", "ifconfig", "ip", "network info"}:
+        if is_windows:
+            command = ["ipconfig"]
+        else:
+            # On macOS and Linux, ifconfig provides interface details
+            command = ["ifconfig"]
+    else:
+        command = None
 
     if command is None:
         print("Blocked: this command is not on the approved list.")
-        print("Supported: dir, ls, pwd, python version, git version, ipconfig")
+        print("Supported: dir, ls, pwd, python version, git version, ipconfig/ifconfig")
         return
 
-    if not confirm("Run supported command", f"Command: {key}"):
+    if not confirm("Run supported command", f"Command: {key} ({' '.join(command)})"):
         print("Cancelled.")
         return
 
@@ -395,96 +416,100 @@ Arbitrary shell commands are not executed.
 
 def handle_request(request):
     text = request.strip()
-    lower = text.lower()
-
     if not text:
         return True
 
     record(text)
 
-    if lower in {"exit", "quit", "bye", "goodbye"}:
+    # Normalize: lower case and strip trailing punctuation (?, !, ., etc.)
+    lower = text.lower()
+    cleaned = re.sub(r"[?!.,;:]+$", "", lower).strip()
+
+    if cleaned in {"exit", "quit", "bye", "goodbye"}:
         print("TermMate: See you later, buddy!")
         return False
 
-    elif lower in {"help", "commands", "features", "what can you do"}:
+    elif cleaned in {"help", "commands", "features", "what can you do"}:
         help_text()
 
     elif (
-        lower in {"list files", "show files", "ls", "dir",
-                  "show folder contents", "show all files",
-                  "list all files", "show me all files in this folder",
-                  "show me all the files in this folder"}
-        or ("show" in lower and "files" in lower and
-            ("folder" in lower or "directory" in lower))
-        or ("list" in lower and "files" in lower)
+        cleaned in {"list files", "show files", "ls", "dir",
+                    "show folder contents", "show all files",
+                    "list all files", "show me all files in this folder",
+                    "show me all the files in this folder",
+                    "show all files in this folder"}
+        or ("show" in cleaned and "files" in cleaned and
+            ("folder" in cleaned or "directory" in cleaned))
+        or ("list" in cleaned and "files" in cleaned)
     ):
         list_files()
 
-    elif lower in {"show folder sizes", "show file sizes",
-                   "list files with sizes"}:
+    elif cleaned in {"show folder sizes", "show file sizes",
+                     "list files with sizes", "show sizes", "folder sizes"}:
         list_files(show_sizes=True)
 
-    elif lower in {"where am i", "pwd", "current folder",
-                   "show current directory"}:
+    elif cleaned in {"where am i", "where ami", "pwd", "current folder",
+                     "show current directory", "current path", "show path", "where am i?"}:
         print("Current directory:", Path.cwd())
 
-    elif lower in {"check system health", "system health",
-                   "system info", "check my computer"}:
+    elif cleaned in {"check system health", "system health",
+                     "system info", "check my computer", "system status"}:
         system_health()
 
-    elif lower in {"find python files", "find all python files",
-                   "find .py files"}:
+    elif cleaned in {"find python files", "find all python files",
+                     "find .py files", "show python files"}:
         find_files("*.py")
 
-    elif lower.startswith("find file named "):
-        find_files(text[len("find file named "):].strip())
+    elif cleaned.startswith("find file named "):
+        find_files(cleaned[len("find file named "):].strip())
 
-    elif lower.startswith("find files named "):
-        find_files(text[len("find files named "):].strip())
+    elif cleaned.startswith("find files named "):
+        find_files(cleaned[len("find files named "):].strip())
 
-    elif lower in {"create a python calculator", "make a python calculator",
-                   "create calculator", "create a calculator"}:
+    elif cleaned in {"create a python calculator", "make a python calculator",
+                     "create calculator", "create a calculator", "make calculator"}:
         make_python_file("calculator.py", calculator=True)
 
-    elif lower.startswith("make a python file named ") or \
-            lower.startswith("make python file named "):
+    elif cleaned.startswith("make a python file named ") or \
+            cleaned.startswith("make python file named "):
         prefix = ("make a python file named "
-                  if lower.startswith("make a python file named ")
+                  if cleaned.startswith("make a python file named ")
                   else "make python file named ")
-        name = text[len(prefix):].strip()
+        name = text[len(prefix):].rstrip("?!.,:;").strip()
         make_python_file(name)
 
-    elif lower.startswith("create a python project named ") or \
-            lower.startswith("create project named "):
+    elif cleaned.startswith("create a python project named ") or \
+            cleaned.startswith("create project named "):
         prefix = ("create a python project named "
-                  if lower.startswith("create a python project named ")
+                  if cleaned.startswith("create a python project named ")
                   else "create project named ")
-        create_project(text[len(prefix):].strip())
+        name = text[len(prefix):].rstrip("?!.,:;").strip()
+        create_project(name)
 
-    elif lower.startswith("explain "):
-        explain_command(text[len("explain "):])
+    elif cleaned.startswith("explain "):
+        explain_command(cleaned[len("explain "):])
 
-    elif lower.startswith("run "):
-        run_safe_command(text[4:])
+    elif cleaned.startswith("run "):
+        run_safe_command(cleaned[4:])
 
-    elif lower in {"check python version", "python version"}:
+    elif cleaned in {"check python version", "python version"}:
         run_safe_command("python version")
 
-    elif lower in {"check git version", "git version"}:
+    elif cleaned in {"check git version", "git version"}:
         run_safe_command("git version")
 
-    elif lower in {"show history", "history"}:
+    elif cleaned in {"show history", "history", "view history"}:
         show_history()
 
-    elif lower in {"clear screen", "clear", "cls", "clear terminal"}:
+    elif cleaned in {"clear screen", "clear", "cls", "clear terminal"}:
         if confirm("Clear screen", "Only the visible terminal screen will be cleared."):
             os.system("cls" if os.name == "nt" else "clear")
 
-    elif lower.startswith("make file named ") or \
-            lower.startswith("create file named "):
-        prefix = ("make file named " if lower.startswith("make file named ")
+    elif cleaned.startswith("make file named ") or \
+            cleaned.startswith("create file named "):
+        prefix = ("make file named " if cleaned.startswith("make file named ")
                   else "create file named ")
-        name = text[len(prefix):].strip()
+        name = text[len(prefix):].rstrip("?!.,:;").strip()
         if not Path(name).suffix:
             name += ".txt"
         write_new_file(name, "", "Create empty text file")
