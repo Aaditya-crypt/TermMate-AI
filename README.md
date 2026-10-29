@@ -1,74 +1,127 @@
-# TermMate AI
+# ⚡ TermMate AI
 
-**An offline, rule-based terminal assistant built with Python.**
+> **A lightweight, offline, rule-based terminal assistant built with pure Python.**
 
-TermMate AI helps users perform common development and terminal tasks through simple natural-language requests. It runs locally and does not require an AI API key.
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#requirements)
+[![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20External-orange.svg)](#requirements)
 
-## Features
+TermMate AI simplifies day-to-day terminal navigation, file inspection, and Python project scaffolding through intuitive, natural-language prompts. It operates **100% locally and offline** without requiring expensive LLM APIs, cloud connections, or third-party dependencies.
 
-- **List files and folders** in the current directory.
-- **View file sizes** to understand how much space files use.
-- **Search for files** by name or pattern, including Python files.
-- **Show the current working directory.**
-- **Display system information**, including operating system, Python version, and disk usage.
-- **Generate a Python calculator** with addition, subtraction, multiplication, and division.
-- **Create Python starter files** with a basic `main()` function.
-- **Create starter Python projects** with `main.py`, `README.md`, and `requirements.txt`.
-- **Explain common terminal commands**, such as `mkdir`, `cd`, `python`, and `git`.
-- **Keep a local request history** of recent TermMate interactions.
+---
 
-## Requirements
+## 📌 Key Features
 
-- Windows, macOS, or Linux (some system commands are platform-specific).
-- Python 3.11 or newer recommended.
-- No third-party Python packages are required for the core prototype.
+* 📂 **File & Directory Management**: List files, inspect file/folder sizes, and display the current working directory.
+* 🔍 **Smart File Search**: Search files by name, extension, or pattern (e.g., locate all `.py` files).
+* 🖥️ **System Health Monitor**: View OS platform info, active Python version, and real-time disk storage metrics (Used/Free/Total).
+* ⚙️ **Code & Project Scaffolding**:
+  * Generate a fully working Python terminal calculator (`calculator.py`).
+  * Create starter Python files with standard `main()` boilerplate.
+  * Scaffold structured Python projects (`main.py`, `README.md`, `requirements.txt`).
+* 📖 **Command Dictionary**: Explain common terminal commands (`mkdir`, `cd`, `pip`, `git`, etc.) in simple terms.
+* 🛡️ **Safe Command Execution**: Safely execute whitelisted system commands (`git version`, `python version`, `ipconfig`, etc.) with user confirmation.
+* 📜 **Persistent Session History**: Automatically maintains a rolling history of your last 100 requests in `termmate_history.json`.
 
-## Run locally
+---
 
-1. Install Python if it is not already installed.
-2. Open a terminal in the project directory.
-3. Start the application:
+## 🔒 Security & Safety Architecture
 
-   `py termmate.py`
+TermMate AI is built with safety as a priority to prevent accidental data loss:
 
-   If the `py` launcher is unavailable, try `python3 termmate.py`.
+* **Isolated Workspace**: All generated files and scaffolded projects are confined to the `TermMate_Workspace/` directory.
+* **Explicit User Confirmation**: Actions that create files, modify workspace structure, or invoke shell commands require explicit approval (`Y/N`).
+* **Overwrite Protection**: TermMate uses exclusive file creation modes (`'x'`) and never silently overwrites existing files.
+* **Strict Command Whitelisting**: Arbitrary shell execution is blocked; only pre-approved, non-destructive diagnostic commands can be run.
 
-4. Type `help` to see supported requests.
-5. Type `exit` to close TermMate AI.
+---
 
-## Example requests
+## 📋 Requirements
 
-- `Show me all files in this folder`
-- `Show folder sizes`
-- `Find Python files`
-- `Find file named main.py`
-- `Where am I?`
-- `Check system health`
-- `Create a Python calculator`
-- `Make a Python file named hello`
-- `Create a Python project named StudentManager`
-- `Explain mkdir`
-- `Run git version`
-- `Show history`
+* **Operating System**: macOS, Linux, or Windows
+* **Python**: Python 3.11 or newer recommended
+* **Dependencies**: **None** (Built strictly using Python's standard library: `pathlib`, `shutil`, `subprocess`, `platform`, `json`, etc.)
 
-## Safety
+---
 
-- Generated files are saved in the `TermMate_Workspace` folder.
-- TermMate asks for confirmation before creating files or running supported commands.
-- Existing files are not intentionally overwritten.
-- Only a small allowlist of terminal commands is supported; arbitrary shell commands are not executed.
-- Request history is stored locally in `termmate_history.json`.
+## 🚀 Quick Start
 
-**Limitations:** This is an early rule-based prototype. It recognizes supported phrases rather than understanding every request like a large language model. System information and command support can vary by operating system.
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Aaditya-crypt/TermMate-AI.git
+cd TermMate-AI
+```
 
-## Roadmap
+### 2. Launch TermMate AI
+* **macOS / Linux**:
+  ```bash
+  python3 termmate.py
+  ```
+* **Windows**:
+  ```cmd
+  py termmate.py
+  # or
+  python termmate.py
+  ```
 
-- Improve natural-language request matching.
-- Add more safe, permission-based file and folder operations.
-- Add automated tests for supported requests.
-- Improve cross-platform compatibility.
-- Improve error messages and logging.
+---
 
-## License
+## 💬 Usage & Command Reference
 
-No license has been specified yet. Unless a license is added, standard copyright applies; others do not automatically receive permission to reuse or redistribute this project.
+Once launched, interact with TermMate using natural requests:
+
+### 📁 Navigation & Inspection
+| Request Prompt | Description |
+| :--- | :--- |
+| `Show me all files in this folder` | Lists all files and subdirectories |
+| `Show folder sizes` | Shows file and folder sizes in readable units |
+| `Where am I?` | Prints the absolute working directory path |
+| `Find Python files` | Searches and lists all `.py` files |
+| `Find file named <filename>` | Locates a specific file by name |
+
+### 🛠️ Scaffolding & Code Generation
+| Request Prompt | Description |
+| :--- | :--- |
+| `Create a Python calculator` | Creates a full terminal calculator in `TermMate_Workspace/` |
+| `Make a Python file named <name>` | Creates a boilerplate `<name>.py` with a `main()` function |
+| `Create a Python project named <name>` | Scaffolds a full starter project directory with standard files |
+| `Create file named <name>` | Creates an empty text file |
+
+### 🔍 System Diagnostics & Helpers
+| Request Prompt | Description |
+| :--- | :--- |
+| `Check system health` | Displays OS, Python version, and disk capacity breakdown |
+| `Explain <command>` | Explains commands like `mkdir`, `cd`, `git`, `pip`, etc. |
+| `Run git version` | Checks the installed Git version with confirmation |
+| `Show history` | Lists recent queries from `termmate_history.json` |
+| `Clear screen` | Clears the terminal screen |
+| `help` | Prints the interactive help menu |
+| `exit` / `quit` | Exits the TermMate session |
+
+---
+
+## 📂 Project Structure
+
+```text
+TermMate-AI/
+├── termmate.py               # Core application logic and command handlers
+├── README.md                 # Project documentation
+├── termmate_history.json     # Rolling log of user requests
+└── TermMate_Workspace/       # Safe output directory for generated files & projects
+```
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Fuzzy matching and regex-based NLP for broader query tolerance.
+- [ ] Optional local LLM integration (e.g., via Ollama) for advanced queries.
+- [ ] Cross-platform safe file deletion/trash-bin integration.
+- [ ] Comprehensive unit and integration test suite (`pytest`).
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
